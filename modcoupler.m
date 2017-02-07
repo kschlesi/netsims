@@ -1,4 +1,4 @@
-function adj = modcoupler(N,M,m,pbase,pin,pout)
+function adj = modcoupler(N,M,m,pbase,pin,pout,varargin)
 % creates adjacency matrix (binary) for a network with an arbitrary number
 % of communities and diffeering community sizes and coupling probabilities.
 % N = total number of nodes
@@ -11,6 +11,9 @@ function adj = modcoupler(N,M,m,pbase,pin,pout)
 % pout = vector containing the out-comm coupling probability for each comm.
 %       size (if numel(pout)==nS) or for each community (if numel(pout)==nC)
 % Note: pin and/or pout may be scalar (same for all nodes)
+% If optional argument 'EnsureConnect' is included, followed by a max number 
+% of iterations, matrices will be generated until no disconnected in-
+% community nodes are created. Default number of iterations = 1000. 
 
 M = M(:);
 m = m(:);
@@ -60,5 +63,22 @@ adj(urows(end)+1:end,urows(end)+1:end) = sblock;
 
 % symmetrize matrix, keeping all connections
 adj = adj + adj';
+
+% ensure no disconnected in-community nodes (verbose)
+if(any(ismemvar(varargin,'EnsureConnect')))
+    try
+      maxiter = varargin{find(ismemvar(varargin,'EnsureConnect'),1,'first')+1};
+      assert(isnumeric(maxiter) && isscalar(maxiter));
+    catch
+      maxiter = 1000;
+    end
+    
+    i=0;
+    while any(sum(adj(1:M'*m,1:M'*m))==0) && i<maxiter
+        disp('ensuring no disconnected in-community nodes...');
+        disp(i); i=i+1;
+        adj = modcoupler(N,M,m,pbase,pin,pout);  % NxN binary coupling matrix
+    end
+end
 
 end

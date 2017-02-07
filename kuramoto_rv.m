@@ -1,31 +1,37 @@
 %%% Simulator for Kuramoto Oscillator Example
 
-sims = 5;
+sims = 100;
 endtime = 10;
 ts = 0.1;
 period = 2*pi;
 
-% define parameters
+% define parameters: functional
 kappa_ = 0.2;   % constant coupling strength
 sigma_ = 1;     % standard deviation of intrinsic frequencies (norm dist)
+
+% define parameters: structural
 N = 100;        % number of nodes
-M = [20;10];    % unique community sizes present
-m = [2;4];      % number of communities of each size
-pin = [0.9,0.6];% coupling probability for in-community nodes
+M = [20;8];     % unique community sizes present
+m = [2;5];      % number of communities of each size
+pin = [0.9,0.5];% coupling probability for in-community nodes
 pout = 0.01;    % coupling probability for out-of-community nodes
 pbase = pout;   % coupling probability for all singletons
 
 %%
-% run sims 
-[theta_ens,A_ens,C_ens] = ksims(sims,N,M,m,pin,pout,pbase,kappa_,sigma_,...
-                                            ts,endtime);
+% create coupling matrix function:
+% takes no arguments, returns NxN binary matrix
+Cgenfun = @()modcoupler(N,M,m,pbase,pin,pout,'EnsureConnect');
 
-% figure: underlying connectivity matrix
-figure; bcolor(C); 
+% figure: single instance of underlying connectivity matrix
+figure; bcolor(Cgenfun());
+
+%%
+% run sims
+[theta_ens,A_ens,C_ens] = ksims_ens(sims,Cgenfun,kappa_,sigma_,ts,endtime);
 
 % figure: position v. time (example)
-mtheta_ens = mod(theta_ens,period);
-figure; bcolor(mtheta_ens(:,:,end)'./period); colorbar;
+mtheta = mod(theta,period);
+figure; bcolor(mtheta(:,:,end)'./period); colorbar;
 
 % figure: final synchronization (example)
 figure; bcolor(squeeze(A_ens(end,:,:,end))); colorbar;
